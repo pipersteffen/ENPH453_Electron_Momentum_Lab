@@ -1,3 +1,4 @@
+from token import EXACT_TOKEN_TYPES
 import numpy as np
 import matplotlib.pyplot as plt
 import random
@@ -23,10 +24,10 @@ def electronType() -> str:
 
 def main():
 
-    e_type = np.empty(N)        # electron type
+    e_type = np.empty(N).astype('int')        # electron type
     z_energy = np.empty(N)      # energy in z direction
     theta = np.empty(N)         # angle
-    height = np.empty(N)        # height that particle will hit the detector
+    heights = np.empty(N)        # height that particle will hit the detector
 
     for i in range(0, N):
         # Get random choice of valence or core electron hit by positron (step 3)
@@ -50,31 +51,36 @@ def main():
         theta[i] = m.atan(z_energy[i] / PHOTON_ENERGY ) # 511 keV, guassian in eV
 
         # find height that particle will hit at
-        height[i] = m.tan(theta[i]) * DETECTOR_DIST
+        heights[i] = m.tan(theta[i]) * DETECTOR_DIST
 
     ########################################################
     # Plot stuff
     ########################################################
 
     # plot the gaussian dist generated
-    # plt.figure()
-    # plt.hist(z_energy)
-    # plt.show()
+    # plt.figure(1)
+    # plt.hist(z_energy, bins=numbins_height)
+    # plt.xlabel('z energy')
+    # plt.ylabel('counts')
 
     # plot the fermi dist generated
+    # TODO
+    
+    # Histogram height distribution for each electron type
+    core_heights = np.where(e_type == 0, heights, np.nan)
+    valence_heights = np.where(e_type == 1, heights, np.nan)
 
-    # histogram height on x axis
-    plt.figure()
-    plt.hist(height, bins=numbins_height)
+    plt.figure(2)
+    plt.hist(core_heights, bins=numbins_height, alpha=0.5, label='core')
+    #plt.hist(valence_heights, bins=numbins_height, alpha=0.5, label='valence') # all nans right now
+    plt.legend()
+    plt.ylabel('Counts')
+    plt.xlabel('Height at detector plane [cm]')
+
+
     plt.show()
+
     
-    # histogram for each electron type
-    
-
-
-
-
-
 
 if __name__=="__main__":
     main()
