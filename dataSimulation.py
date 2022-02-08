@@ -39,7 +39,7 @@ def main():
             z_energy[i] = random.gauss(1, 4) # mu=1, sigma=4 eV
 
         elif e_type[i] == 1: #'valence':
-            z_energy[i] = np.nan
+            z_energy[i] = random.uniform(-10,10)
             # assign energy based on fermi momentum distribution
             # TODO
 
@@ -57,25 +57,27 @@ def main():
     # Plot stuff
     ########################################################
 
-    # plot the gaussian dist generated
-    # plt.figure(1)
-    # plt.hist(z_energy, bins=numbins_height)
-    # plt.xlabel('z energy')
-    # plt.ylabel('counts')
-
-    # plot the fermi dist generated
-    # TODO
+    # Histogram the z energy distribution for each electron type
+    core_energy = np.where(e_type == 0, z_energy, np.nan)
+    valence_energy = np.where(e_type == 1, z_energy, np.nan)
+    plt.figure(1)
+    plt.hist(core_energy, bins=numbins_height, alpha=0.5, label='core')
+    plt.hist(valence_energy, bins=numbins_height, alpha=0.5, label='valence')
+    plt.xlabel('Z energy [eV]')
+    plt.ylabel('Counts')
+    plt.legend()
+    plt.title('Distribution of z-component of energies by electron type')
     
     # Histogram height distribution for each electron type
     core_heights = np.where(e_type == 0, heights, np.nan)
     valence_heights = np.where(e_type == 1, heights, np.nan)
-
     plt.figure(2)
     plt.hist(core_heights, bins=numbins_height, alpha=0.5, label='core')
-    #plt.hist(valence_heights, bins=numbins_height, alpha=0.5, label='valence') # all nans right now
+    plt.hist(valence_heights, bins=numbins_height, alpha=0.5, label='valence')
     plt.legend()
     plt.ylabel('Counts')
     plt.xlabel('Height at detector plane [cm]')
+    plt.title('Distribution of height of particle at detector plane by electron type')
 
 
     plt.show()
