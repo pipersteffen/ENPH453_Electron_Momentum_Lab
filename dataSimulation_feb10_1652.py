@@ -106,15 +106,15 @@ def main():
     ########################################################
 
     # Histogram the z energy distribution for each electron type
-    core_energy = np.where(e_type == 0, z_energy, np.nan)
-    valence_energy = np.where(e_type == 1, z_energy, np.nan)
-    plt.figure(1)
-    plt.hist(core_energy, bins=numbins_height, alpha=0.5, label='core')
-    plt.hist(valence_energy, bins=numbins_height, alpha=0.5, label='valence')
-    plt.xlabel('Z energy [eV]')
-    plt.ylabel('Counts')
-    plt.legend()
-    plt.title('Distribution of z-component of energies by electron type')
+    # core_energy = np.where(e_type == 0, z_energy, np.nan)
+    # valence_energy = np.where(e_type == 1, z_energy, np.nan)
+    # plt.figure(1)
+    # plt.hist(core_energy, bins=numbins_height, alpha=0.5, label='core') # this doesn't work anymore because z_energy
+    # plt.hist(valence_energy, bins=numbins_height, alpha=0.5, label='valence')
+    # plt.xlabel('Z energy [eV]')
+    # plt.ylabel('Counts')
+    # plt.legend()
+    # plt.title('Distribution of z-component of energies by electron type')
     
     # Histogram height distribution for each electron type
     core_heights = np.where(e_type == 0, heights, np.nan)
