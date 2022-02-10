@@ -19,7 +19,7 @@ HEIGHTS = np.linspace(-HMAX, HMAX, numbins_height)  # use for binning, needs to 
 PHOTON_ENERGY = 511000 # eV
 DETECTOR_DIST = 150 # cm
 
-#for fermi distribution
+# For fermi distribution
 HBAR = 6.582119569 * 10**(-16) #reduced plank's constant [eV⋅s]
 E_MASS = 0.51099895000*1000000 #electron mass [MeV/c^2] -> [eV/c^2]
 
@@ -77,19 +77,12 @@ def main():
         if e_type[i] == 0: #'core':
             # assign momenta based on gaussian distribution, where sigma is converted to momentum from energy
             z_momenta[i] = random.gauss(0, energyToMomentum(4)) # mu=0, sigma=4 eV (energy)
-            # if z_energy[i] < 0:
-            #     z_momenta[i] = (-1)*(abs(z_energy[i])*2*E_MASS)**(1/2)
-            # else: 
-            #     z_momenta[i] = (z_energy[i]*2*E_MASS)**(1/2)
-            #z_momenta[i] = m.sqrt(abs(z_energy[i])*2*E_MASS)
 
         elif e_type[i] == 1: #'valence':
             total_momenta = getRandFermiMomentum(fermi_energy, fermi_energy_PDF)
-            #total_momenta = (total_fermi*2*E_MASS)**(1/2)
             
             phi_random = random.randrange(0,180)
             # assign energy based on fermi momentum distribution
-            #z_energy[i] = m.cos(m.radians(phi_random))*total_momenta
             z_momenta[i] = m.cos(m.radians(phi_random))*total_momenta
 
         else:
@@ -104,22 +97,11 @@ def main():
     ########################################################
     # Plot stuff
     ########################################################
-
-    # Histogram the z energy distribution for each electron type
-    # core_energy = np.where(e_type == 0, z_energy, np.nan)
-    # valence_energy = np.where(e_type == 1, z_energy, np.nan)
-    # plt.figure(1)
-    # plt.hist(core_energy, bins=numbins_height, alpha=0.5, label='core') # this doesn't work anymore because z_energy
-    # plt.hist(valence_energy, bins=numbins_height, alpha=0.5, label='valence')
-    # plt.xlabel('Z energy [eV]')
-    # plt.ylabel('Counts')
-    # plt.legend()
-    # plt.title('Distribution of z-component of energies by electron type')
     
     # Histogram height distribution for each electron type
     core_heights = np.where(e_type == 0, heights, np.nan)
     valence_heights = np.where(e_type == 1, heights, np.nan)
-    plt.figure(2)
+    plt.figure(1)
     plt.hist(core_heights, bins=numbins_height, alpha=0.5, label='core')
     plt.hist(valence_heights, bins=numbins_height, alpha=0.5, label='valence')
     plt.legend()
@@ -130,16 +112,16 @@ def main():
     # Histogram height distribution for each electron type
     core_mom = np.where(e_type == 0, z_momenta, np.nan)
     valence_mom = np.where(e_type == 1, z_momenta, np.nan)
-    plt.figure(3)
+    plt.figure(2)
     plt.hist(core_mom, bins=numbins_height, alpha=0.5, label='core')
     plt.hist(valence_mom, bins=numbins_height, alpha=0.5, label='valence')
     plt.legend()
     plt.ylabel('Counts')
     plt.xlabel('Momenta [eV?]')
     plt.title('Distribution of momenta of particle at detector plane by electron type')
+    
     plt.show()
 
-    
 
 if __name__=="__main__":
     main()
