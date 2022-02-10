@@ -31,9 +31,12 @@ class fermiPDF(st.rv_continuous):
          densityOfStates = (1/(2*m.pi**2))*((2*E_MASS)/(HBAR**2)**(3/2))*E**(0.5)
          return densityOfStates
 
+def energyToMomentum(e):
+    return m.sqrt(e*2*E_MASS)
+
 def initFermiEnergy(nFermiElements = 15000):
     #valid fermi energy range
-    fermiRange = [0, 7]     # [ev]
+    fermiRange = [0, energyToMomentum(7)]     # [ev]
     # valid fermi energies [eV]
     fermiEnergy = np.linspace(fermiRange[0], fermiRange[1], nFermiElements)
 
@@ -51,7 +54,7 @@ def initFermiEnergy(nFermiElements = 15000):
 
     return fermiEnergy, normProb
 
-def getRandFermiEnergy(energy, normProb):
+def getRandFermiMomentum(energy, normProb):
     return np.random.choice(energy, size=1, p=normProb)
 
 
@@ -72,20 +75,21 @@ def main():
 
         # Choose the z component of the momentum (step 4)
         if e_type[i] == 0: #'core':
-            # assign energy based on gaussian distribution
-            z_energy[i] = random.gauss(1, 4) # mu=1, sigma=4 eV
-            if z_energy[i] < 0:
-                z_momenta[i] = (-1)*(abs(z_energy[i])*2*E_MASS)**(1/2)
-            else: 
-                z_momenta[i] = (z_energy[i]*2*E_MASS)**(1/2)
+            # assign momenta based on gaussian distribution, where sigma is converted to momentum from energy
+            z_momenta[i] = random.gauss(0, energyToMomentum(4)) # mu=0, sigma=4 eV (energy)
+            # if z_energy[i] < 0:
+            #     z_momenta[i] = (-1)*(abs(z_energy[i])*2*E_MASS)**(1/2)
+            # else: 
+            #     z_momenta[i] = (z_energy[i]*2*E_MASS)**(1/2)
+            #z_momenta[i] = m.sqrt(abs(z_energy[i])*2*E_MASS)
 
         elif e_type[i] == 1: #'valence':
-            total_fermi = getRandFermiEnergy(fermi_energy, fermi_energy_PDF)
-            total_momenta = (total_fermi*2*E_MASS)**(1/2)
+            total_momenta = getRandFermiMomentum(fermi_energy, fermi_energy_PDF)
+            #total_momenta = (total_fermi*2*E_MASS)**(1/2)
             
             phi_random = random.randrange(0,180)
             # assign energy based on fermi momentum distribution
-            z_energy[i] = m.cos(m.radians(phi_random))*total_fermi
+            #z_energy[i] = m.cos(m.radians(phi_random))*total_momenta
             z_momenta[i] = m.cos(m.radians(phi_random))*total_momenta
 
         else:
