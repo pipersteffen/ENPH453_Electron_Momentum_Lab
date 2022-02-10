@@ -9,6 +9,9 @@ from sympy import N
 
 STEPSIZE = 0.0635 # cm
 
+PLOT_DATA_FIT = 0
+PLOT_DATA_BAR = 1
+
 def gauss(x, a, x0, sigma):
     return a*exp(-(x-x0)**2/(2*sigma**2))
 
@@ -22,28 +25,34 @@ def main():
     counter_total = data[:,3]
     counter_coinc = data[:,4]
 
-    counts = counter_coinc/counter_total
+    counts = counter_coinc/counter_total # normalize hits on detector
+    heights = counter_coinc**2/counter_total
 
-    print(counts)
     x = position*0.5*STEPSIZE
-
     n = len(x)
     mean = sum(x*counts)/n
     sigma = m.sqrt(sum(counts*(x-mean)**2)/n)
 
-    # Plot
-    # y value: counter_c / counter_total --> gaussian fit
+    # fit data to generic gaussian function
     popt, pcov = curve_fit(gauss, x, counts, p0=[max(counts),mean,sigma])
-    # x value: postition * 0.5 * step size
-        # in sim we get a coincidence hit every time we send a positron
+    
+    # Plot data & fit
+    if PLOT_DATA_FIT:
+        fig1, ax1 = plt.subplots()
+        ax1.plot(x, counts,  '.', label='data')
+        ax1.plot(x, gauss(x, *popt), label='fit')
+        ax1.set_xlabel('Position on detector plane')
+        ax1.set_ylabel('Number of hits on detector')
+        ax1.set_title('Experimental Data')
+        ax1.legend()
 
-    plt.figure(1)
-    plt.plot(x, counts,  '.', label='data')
-    plt.plot(x, gauss(x, *popt), label='fit')
-    plt.xlabel('Position on detector plane')
-    plt.ylabel('Number of hits on detector')
-    plt.title('Experimental Data')
-    plt.legend()
+    if PLOT_DATA_BAR:
+        fig2, ax2 = plt.subplots()
+        ax2.bar(x, heights, width=0.02)
+        ax2.set_xlabel('Position on detector plane')
+        ax2.set_ylabel('Corrected counts per total coincidence hits')
+        ax2.set_title('Experimental Data')
+    
     plt.show()
 
 if __name__=="__main__": 
