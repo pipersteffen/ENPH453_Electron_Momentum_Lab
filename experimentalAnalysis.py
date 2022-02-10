@@ -1,23 +1,18 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import random
 import math as m
-import csv
 from scipy.optimize import curve_fit
-from scipy import exp
-from sympy import N
 
 STEPSIZE = 0.0635 # cm
 
 PLOT_DATA_FIT = 0
-PLOT_DATA_BAR = 1
+PLOT_DATA_BAR = 0
 
 def gauss(x, a, x0, sigma):
-    return a*exp(-(x-x0)**2/(2*sigma**2))
+    return a*np.exp(-(x-x0)**2/(2*sigma**2))
 
 def main(): 
     data = np.genfromtxt('realData.csv', delimiter=',', skip_header=True)
-    print(data.shape)
 
     step = data[:,0]
     time = data[:,1]
@@ -56,7 +51,8 @@ def main():
         ax2.set_ylabel('Corrected counts per total coincidence hits')
         ax2.set_title('Experimental Data')
     
-    plt.show()
+    if PLOT_DATA_FIT or PLOT_DATA_BAR:
+        plt.show()
 
 if __name__=="__main__": 
     main()
