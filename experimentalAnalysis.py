@@ -34,8 +34,11 @@ def main():
     sigma = m.sqrt(sum(counts*(x-mean)**2)/n)
 
     # fit data to generic gaussian function
-    popt, pcov = curve_fit(gauss, x, counts, p0=[max(counts),mean,sigma])
+    popt, pcov = curve_fit(gauss, x, counts, p0=[max(counts),mean,sigma]) # popt [a, x0, sigma]
     
+    x0 = popt[1]
+    print('Curve fit x0 = ', x0) # -0.06188926436973738
+
     # Plot data & fit
     if PLOT_DATA_FIT:
         fig1, ax1 = plt.subplots()
