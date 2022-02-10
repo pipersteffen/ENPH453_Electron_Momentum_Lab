@@ -101,24 +101,25 @@ def main():
     # Histogram height distribution for each electron type
     core_heights = np.where(e_type == 0, heights, np.nan)
     valence_heights = np.where(e_type == 1, heights, np.nan)
-    plt.figure(1)
-    plt.hist(core_heights, bins=numbins_height, alpha=0.5, label='core')
-    plt.hist(valence_heights, bins=numbins_height, alpha=0.5, label='valence')
-    plt.legend()
-    plt.ylabel('Counts')
-    plt.xlabel('Height at detector plane [cm]')
-    plt.title('Distribution of height of particle at detector plane by electron type')
+    fig, (ax1, ax2) = plt.subplots(1,2)
+
+    ax1.hist(core_heights, bins=numbins_height, alpha=0.5, label='core')
+    ax1.hist(valence_heights, bins=numbins_height, alpha=0.5, label='valence')
+    ax1.legend()
+    ax1.set_ylabel('Counts')
+    ax1.set_xlabel('Height at detector plane [cm]')
+    ax1.set_title('Distribution of height of particle at detector plane by electron type')
 
     # Histogram height distribution for each electron type
     core_mom = np.where(e_type == 0, z_momenta, np.nan)
     valence_mom = np.where(e_type == 1, z_momenta, np.nan)
-    plt.figure(2)
-    plt.hist(core_mom, bins=numbins_height, alpha=0.5, label='core')
-    plt.hist(valence_mom, bins=numbins_height, alpha=0.5, label='valence')
-    plt.legend()
-    plt.ylabel('Counts')
-    plt.xlabel('Momenta [eV?]')
-    plt.title('Distribution of momenta of particle at detector plane by electron type')
+    
+    ax2.hist(core_mom, bins=numbins_height, alpha=0.5, label='core')
+    ax2.hist(valence_mom, bins=numbins_height, alpha=0.5, label='valence')
+    ax2.legend()
+    ax2.set_ylabel('Counts')
+    ax2.set_xlabel('Momenta [eV?]')
+    ax2.set_title('Distribution of momenta of particle at detector plane by electron type')
     
     plt.show()
 
