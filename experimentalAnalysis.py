@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math as m
 from scipy.optimize import curve_fit
+from scipy.stats import norm
 
 STEPSIZE = 0.0635 # cm
 
@@ -26,8 +27,11 @@ def main():
     counter_total = data[:,3]
     counter_coinc = data[:,4]
 
-    counts = counter_coinc/counter_total # normalize hits on detector
-    heights = counter_coinc**2/counter_total
+    #counts = counter_coinc/counter_total # normalize hits on detector
+    #heights = counter_coinc**2/counter_total
+
+    counts = counter_coinc**2/counter_total # corrected # of counts
+    err_counts = ((2*counter_coinc/counter_total * counter_coinc**0.5)**2 + (counter_coinc**2/counter_total**2 * counter_total**0.5)**2)**0.5 # uncertainty in counts
 
     x = position*0.5*STEPSIZE
     n = len(x)
@@ -35,10 +39,10 @@ def main():
     sigma = m.sqrt(sum(counts*(x-mean)**2)/n)
 
     # fit data to generic gaussian function
-    popt, pcov = curve_fit(gauss, x, counts, p0=[max(counts),mean,sigma]) # popt [a, x0, sigma]
+    popt, pcov = curve_fit(gauss, x, counts, p0=[max(counts),mean,sigma], sigma=err_counts) # popt [a, x0, sigma]
     
     x0 = popt[1]
-    print('Curve fit x0 = ', x0) # -0.06188926436973738
+    #print('Curve fit x0 = ', x0) # -0.06188926436973738
 
     if FIT_TAILS:
         # Fit tails of data to gaussian function
@@ -55,27 +59,22 @@ def main():
         tail_counts_left = counts[x <= -delta]
         tail_counts_right = counts[x >= delta]
         tail_counts = np.concatenate([tail_counts_left, tail_counts_right])
-        
-        print('tail x: ', tail_x)
-        print('tail counts: ', tail_counts)
 
-        # fit the gauss
-        n2 = len(tail_x)
-        mean2 = sum(tail_x*tail_counts)/n2
-        sigma2 = m.sqrt(sum(tail_counts*(tail_x - mean2)**2)/n2)
+        # subselect the error counts array to points on the tails
+        err_counts_left = err_counts[x <= -delta]
+        err_counts_right = err_counts[x >= delta]
+        err_counts_tail = np.concatenate([err_counts_left, err_counts_right])
 
-        popt2, pcov2 = curve_fit(gauss, tail_x, tail_counts, p0=[max(tail_counts),mean2,sigma2]) # popt [a, x0, sigma]
+        popt2, pcov2 = curve_fit(gauss, tail_x, tail_counts, p0=[max(counts),mean,0.3], sigma=err_counts_tail) # 0.3 is a guess from the data points dist
 
-        print('popt2:', popt2)
-        print('pcov2:', pcov2)
-    
         # plot the fit
         fig3, ax3 = plt.subplots()
-        ax3.plot(x, counts,  '.', label='all data')
-        ax3.plot(tail_x, tail_counts, '.', label='tail points')
-        ax3.plot(tail_x, gauss(tail_x, *popt2), label='tail fit')
+        ax3.plot(x, counts,  '.k', label='All data')
+        ax3.plot(x, gauss(x, *popt), ':k', label='All data fit')
+        ax3.plot(tail_x, tail_counts, '.r', label='Tail data')
+        ax3.plot(x, gauss(x, *popt2), '-r', label='Tail data fit')
         ax3.set_xlabel('Position on detector plane')
-        ax3.set_ylabel('Number of hits on detector')
+        ax3.set_ylabel('Corrected number of hits on detector')
         ax3.set_title('Experimental Data')
         ax3.legend()
 
@@ -102,7 +101,7 @@ def main():
 
     if PLOT_DATA_BAR:
         fig2, ax2 = plt.subplots()
-        ax2.bar(x, heights, width=0.02)
+        ax2.bar(x, counts, width=0.02)
         ax2.set_xlabel('Position on detector plane')
         ax2.set_ylabel('Corrected counts per total coincidence hits')
         ax2.set_title('Experimental Data')
