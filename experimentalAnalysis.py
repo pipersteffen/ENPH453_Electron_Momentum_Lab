@@ -41,53 +41,96 @@ def main():
     # fit data to generic gaussian function
     popt, pcov = curve_fit(gauss, x, counts, p0=[max(counts),mean,sigma], sigma=err_counts) # popt [a, x0, sigma]
     
-    x0 = popt[1]
+    offset = popt[1]
     #print('Curve fit x0 = ', x0) # -0.06188926436973738
 
     if FIT_TAILS:
         # Fit tails of data to gaussian function
         # Need subset of data: furthest left  - left+ 0.793, furthest right-0.793 - furthest right
         #delta = 0.793
-        delta = 0.6 #arbitrary, eyeballed from data
+        delta = 0.45 #arbitrary, eyeballed from data
+
+        dL = offset - delta # left side
+        dR = offset + delta
         
         # subselect the x values of points on the tails
-        left_points = x[x <= -delta]
-        right_points = x[x >= delta]
+        left_points = x[x <= dL]
+        right_points = x[x >= dR]
         tail_x = np.concatenate([left_points, right_points])
 
+        mid_x = x[(x >= dL) & (x <= dR)]
+
         # subselect the count values of points on the tails
-        tail_counts_left = counts[x <= -delta]
-        tail_counts_right = counts[x >= delta]
+        tail_counts_left = counts[x <= dL]
+        tail_counts_right = counts[x >= dR]
         tail_counts = np.concatenate([tail_counts_left, tail_counts_right])
 
+        mid_counts = counts[(x >= dL) & (x <= dR)]
+        #mid_counts = np.where(np.logical_and(x >= -delta, x <= delta))
+        print(mid_counts)
+        #mid_counts = np.concatenate([counts[x >= -delta], counts[x <= delta]])
+
         # subselect the error counts array to points on the tails
-        err_counts_left = err_counts[x <= -delta]
-        err_counts_right = err_counts[x >= delta]
+        err_counts_left = err_counts[x <= dL]
+        err_counts_right = err_counts[x >= dR]
         err_counts_tail = np.concatenate([err_counts_left, err_counts_right])
 
         popt2, pcov2 = curve_fit(gauss, tail_x, tail_counts, p0=[max(counts),mean,0.3], sigma=err_counts_tail) # 0.3 is a guess from the data points dist
 
+        tail_fit = gauss(x, *popt2)
+        all_fit = gauss(x, *popt)
+
         # plot the fit
         fig3, ax3 = plt.subplots()
         ax3.plot(x, counts,  '.k', label='All data')
-        ax3.plot(x, gauss(x, *popt), ':k', label='All data fit')
+        ax3.plot(x, all_fit, ':k', label='All data fit')
         ax3.plot(tail_x, tail_counts, '.r', label='Tail data')
-        ax3.plot(x, gauss(x, *popt2), '-r', label='Tail data fit')
+        ax3.plot(x, tail_fit, '-r', label='Tail data fit')
+
+        # Now fit the parabola part....
+        # # subtract tail fit values from data TODO
+        # tail_fit_mid = np.concatenate([tail_fit[x >= -delta], tail_fit[x <= delta]])
+        mid_tail_fit = tail_fit[(x >= dL) & (x <= dR)]
+        counts_sub = mid_counts - mid_tail_fit
+
+        # fit quadtratic to that
+        popt3, pcov3 = curve_fit(poly, mid_x, counts_sub)#, p0=[-8, -1, 1.5]) # need a,b,c guess for p0
+
+        poly_fit = poly(mid_x, *popt3)
+        ax3.plot(mid_x, poly_fit, '-b', label='mid subtract fit')
+        ax3.plot(mid_x, counts_sub, '*', label='subtracted')
+
+        intercept = np.roots(popt3)
+        print(intercept)
+        print('fermi vals: ')
+        print(intercept[0]-offset)
+        print(intercept[1]-offset)
+
         ax3.set_xlabel('Position on detector plane')
         ax3.set_ylabel('Corrected number of hits on detector')
         ax3.set_title('Experimental Data')
         ax3.legend()
 
-        # Now fit the parabola part....
-  
-        # subtract tail fit values from data TODO
-        # x_prime = 
+        # FIND RATIO
+        poly_sum = np.sum(poly_fit[poly_fit>=0])
+        tail_sum = np.sum(tail_fit)
+        all_sum = np.sum(all_fit)
 
-        # fit parabola TODO
-        # popt, pcov = curve_fit(poly, x, counts)
+        print('poly coeffs:',popt3)
 
-        # plot the fit
-       
+        # percent of count is tail/core
+        perc_core = tail_sum/(tail_sum+poly_sum)
+
+        print(poly_fit)
+
+        # percent of count is poly/valence
+        perc_val = poly_sum/(tail_sum+poly_sum)
+        
+        print('Percent core: ', perc_core*100)
+        print('Percent valence: ', perc_val*100)
+
+        print('ratio or poly curve to tail: ', poly_sum/tail_sum)
+
 
     # Plot data & fit
     if PLOT_DATA_FIT:
