@@ -95,11 +95,11 @@ def main():
         all_fit = gauss(x, *popt)
 
         # plot the fit
-        fig3, ax3 = plt.subplots()
-        ax3.plot(x, counts,  '.k', label='All data')
-        ax3.plot(x, all_fit, ':k', label='All data fit')
-        ax3.plot(tail_x, tail_counts, '.r', label='Tail data')
-        ax3.plot(x, tail_fit, '-r', label='Tail data fit')
+        #fig3, ax3 = plt.subplots()
+        #ax3.plot(x, counts,  '.k', label='All data')
+        #ax3.plot(x, all_fit, ':k', label='All data fit')
+        #ax3.plot(tail_x, tail_counts, '.r', label='Tail data')
+        #ax3.plot(x, tail_fit, '-r', label='Tail data fit')
 
         # Now fit the parabola part....
         # # subtract tail fit values from data TODO
@@ -110,44 +110,56 @@ def main():
 
         # fit quadratic to that, with errors
         popt3Temp, pcov3Temp = curve_fit(poly, mid_x, counts_sub)#, sigma=err_counts_sub)#, p0=[-8, -1, 1.5]) # need a,b,c guess for p0
-        popt3, pcov3 = curve_fit(poly, mid_x, counts_sub, sigma=err_counts_sub, p0=popt3Temp)
-        quad_fit_coeffs = unumpy.uarray(popt3, np.sqrt(np.diag(pcov3)))
+        popt3, pcov3 = curve_fit(poly, mid_x, counts_sub, sigma=err_counts[(x >= dL) & (x <= dR)], p0=popt3Temp)
+        quadFitError = unumpy.uarray(popt3, np.sqrt(np.diag(pcov3)))
         #print(quad_fit_coeffs)
 
         poly_fit = poly(mid_x, *popt3)
-        ax3.plot(mid_x, poly_fit, '-b', label='mid subtract fit')
-        ax3.plot(mid_x, counts_sub, '*', label='subtracted')
+        #ax3.plot(mid_x, poly_fit, '-b', label='mid subtract fit')
+        #ax3.plot(mid_x, counts_sub, '*', label='subtracted')
 
         #intercept = np.roots(quad_fit_coeffs)
-        intercept = quadraticEquation(quad_fit_coeffs)
+        intercept = quadraticEquation(quadFitError)
         average_int = (abs(intercept[0] - offset) + abs(intercept[1] - offset))/2
         fermiMomentum = average_int*511/150 #Momentum in keV
 
-        ax3.set_xlabel('Position on detector plane')
-        ax3.set_ylabel('Corrected number of hits on detector')
-        ax3.set_title('Experimental Data')
-        ax3.legend()
+        #ax3.set_xlabel('Position on detector plane')
+        #ax3.set_ylabel('Corrected number of hits on detector')
+        #ax3.set_title('Experimental Data')
+        #ax3.legend()
 
         # FIND RATIO
         poly_sum = np.sum(poly_fit[poly_fit>=0])
+        poly_err = (poly_sum)**0.5
         tail_sum = np.sum(tail_fit)
+        tail_err = tail_sum**0.5
+
+        polyUnc = unc.ufloat(poly_sum, poly_err)
+        tailUnc = unc.ufloat(tail_sum, tail_err)
         #all_sum = np.sum(all_fit)
 
         #print('poly coeffs:',popt3)
 
         # percent of count is tail/core
-        perc_core = tail_sum/(tail_sum+poly_sum)
+        perc_core = tailUnc/(tailUnc+polyUnc)
 
         #print(poly_fit)
 
         # percent of count is poly/valence
-        perc_val = poly_sum/(tail_sum+poly_sum)
+        perc_val = polyUnc/(tailUnc+polyUnc)
         
+        # generating errors in each fit coefficients
+        allFitError = unumpy.uarray(popt, np.sqrt(np.diag(pcov)))
+        tailFitError = unumpy.uarray(popt2, np.sqrt(np.diag(pcov2)))
+
         print('Percent core: ', perc_core*100)
         print('Percent valence: ', perc_val*100)
 
         print('Ratio or poly curve to tail: ', poly_sum/tail_sum)
         print('Fermi Momentum of fitted distrubtion: ', fermiMomentum, " keV.")
+        print('Error in All Fit: ', allFitError)
+        print('Error in Tail Fit: ', tailFitError)
+        print('Error in Quadratic Fit: ', quadFitError)
 
 
     # Plot data & fit
@@ -166,9 +178,45 @@ def main():
         ax2.set_xlabel('Position on detector plane')
         ax2.set_ylabel('Corrected counts per total coincidence hits')
         ax2.set_title('Experimental Data')
+
+    if PLOT_TAIL_FIT:
+        fig3 = plt.figure(figsize=(16,10))
+        ax1 = plt.subplot(1, 2, 1)
+        ax2 = plt.subplot(2, 2, 2)
+        ax3 = plt.subplot(2, 2, 4)
+
+        fig3.suptitle('Experimental Data with Curve Fitting')
+        ax1.errorbar(x, counts, yerr=err_counts, fmt='.k', capsize=3,label='Experimental Data')
+        ax1.plot(x, all_fit, '--k', label='Gaussian Fit to All Data')
+        ax1.set_xlabel('Position on Detector Plane')
+        ax1.set_ylabel('Corrected number of hits on detector')
+        ax1.legend()
+        ax1.set_title("Gaussian Fit to All Data")
+        ax1.grid(linestyle=":")
+
+        ax2.errorbar(x, counts, yerr=err_counts, fmt='.k', capsize=3,label='Experimental Data')
+        ax2.errorbar(tail_x, tail_counts, yerr=err_counts_tail, fmt='*r', capsize=3, label='Tail Data for Gaussian Fit')
+        ax2.plot(x, tail_fit, '-r', label='Gaussian Fit to Tail Data')
+        ax2.set_xlabel('Position on Detector Plane')
+        ax2.set_ylabel('Corrected number of hits on detector')
+        ax2.legend()
+        ax2.set_title("Gaussian Fit to Tail Data")
+        ax2.grid(linestyle=":")
+
+        ax3.errorbar(x, counts, yerr=err_counts, fmt='.k', capsize=3,label='Experimental Data')
+        ax3.errorbar(mid_x, counts_sub, yerr=err_counts[(x >= dL) & (x <= dR)], fmt='*b', capsize=3, label='Experimental Data Minus Tail Fit')
+        ax3.plot(mid_x, poly_fit, '-b', label='Quadratic Fit to Subtracted Data')
+        ax3.set_xlabel('Position on Detector Plane')
+        ax3.set_ylabel('Corrected number of hits on detector')
+        ax3.legend()
+        ax3.set_title("Quadratic Fit to Centre Data")
+        ax3.grid(linestyle=":")
+
+
     
     if PLOT_DATA_FIT or PLOT_DATA_BAR or PLOT_TAIL_FIT:
         plt.show()
+
 
 if __name__=="__main__": 
     main()
