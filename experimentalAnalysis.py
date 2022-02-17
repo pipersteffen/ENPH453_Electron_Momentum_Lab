@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import math as m
+import uncertainties as unc
+from uncertainties import unumpy
 from scipy.optimize import curve_fit
 from scipy.stats import norm
 
@@ -17,6 +19,18 @@ def gauss(x, a, x0, sigma):
 def poly(x, a, b, c):
     # ax**2 + bx + c
     return a*x**2 + b*x + c
+
+def quadraticEquation(fit):
+    a = fit[0]
+    b = fit[1]
+    c = fit[2]
+
+    d = b**2 - 4*a*c
+
+    sol1 = (-b - d**0.5)/(2*a)
+    sol2 = (-b + d**0.5)/(2*a)
+
+    return [sol1, sol2]
 
 def main(): 
     data = np.genfromtxt('realData.csv', delimiter=',', skip_header=True)
@@ -41,7 +55,7 @@ def main():
     # fit data to generic gaussian function
     popt, pcov = curve_fit(gauss, x, counts, p0=[max(counts),mean,sigma], sigma=err_counts) # popt [a, x0, sigma]
     
-    offset = popt[1]
+    offset = unc.ufloat(popt[1], np.sqrt(pcov[1,1]))
     #print('Curve fit x0 = ', x0) # -0.06188926436973738
 
     if FIT_TAILS:
@@ -67,7 +81,7 @@ def main():
 
         mid_counts = counts[(x >= dL) & (x <= dR)]
         #mid_counts = np.where(np.logical_and(x >= -delta, x <= delta))
-        print(mid_counts)
+        #print(mid_counts)
         #mid_counts = np.concatenate([counts[x >= -delta], counts[x <= delta]])
 
         # subselect the error counts array to points on the tails
@@ -92,19 +106,22 @@ def main():
         # tail_fit_mid = np.concatenate([tail_fit[x >= -delta], tail_fit[x <= delta]])
         mid_tail_fit = tail_fit[(x >= dL) & (x <= dR)]
         counts_sub = mid_counts - mid_tail_fit
+        err_counts_sub = abs(counts_sub)**0.5
 
-        # fit quadtratic to that
-        popt3, pcov3 = curve_fit(poly, mid_x, counts_sub)#, p0=[-8, -1, 1.5]) # need a,b,c guess for p0
+        # fit quadratic to that, with errors
+        popt3Temp, pcov3Temp = curve_fit(poly, mid_x, counts_sub)#, sigma=err_counts_sub)#, p0=[-8, -1, 1.5]) # need a,b,c guess for p0
+        popt3, pcov3 = curve_fit(poly, mid_x, counts_sub, sigma=err_counts_sub, p0=popt3Temp)
+        quad_fit_coeffs = unumpy.uarray(popt3, np.sqrt(np.diag(pcov3)))
+        #print(quad_fit_coeffs)
 
         poly_fit = poly(mid_x, *popt3)
         ax3.plot(mid_x, poly_fit, '-b', label='mid subtract fit')
         ax3.plot(mid_x, counts_sub, '*', label='subtracted')
 
-        intercept = np.roots(popt3)
-        print(intercept)
-        print('fermi vals: ')
-        print(intercept[0]-offset)
-        print(intercept[1]-offset)
+        #intercept = np.roots(quad_fit_coeffs)
+        intercept = quadraticEquation(quad_fit_coeffs)
+        average_int = (abs(intercept[0] - offset) + abs(intercept[1] - offset))/2
+        fermiMomentum = average_int*511/150 #Momentum in keV
 
         ax3.set_xlabel('Position on detector plane')
         ax3.set_ylabel('Corrected number of hits on detector')
@@ -114,14 +131,14 @@ def main():
         # FIND RATIO
         poly_sum = np.sum(poly_fit[poly_fit>=0])
         tail_sum = np.sum(tail_fit)
-        all_sum = np.sum(all_fit)
+        #all_sum = np.sum(all_fit)
 
-        print('poly coeffs:',popt3)
+        #print('poly coeffs:',popt3)
 
         # percent of count is tail/core
         perc_core = tail_sum/(tail_sum+poly_sum)
 
-        print(poly_fit)
+        #print(poly_fit)
 
         # percent of count is poly/valence
         perc_val = poly_sum/(tail_sum+poly_sum)
@@ -129,7 +146,8 @@ def main():
         print('Percent core: ', perc_core*100)
         print('Percent valence: ', perc_val*100)
 
-        print('ratio or poly curve to tail: ', poly_sum/tail_sum)
+        print('Ratio or poly curve to tail: ', poly_sum/tail_sum)
+        print('Fermi Momentum of fitted distrubtion: ', fermiMomentum, " keV.")
 
 
     # Plot data & fit
