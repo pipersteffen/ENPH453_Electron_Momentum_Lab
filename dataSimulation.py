@@ -20,8 +20,8 @@ PHOTON_ENERGY = 511000 # eV
 DETECTOR_DIST = 150 # cm
 
 # For fermi distribution
-HBAR = 6.582119569 * 10**(-16) #reduced plank's constant [eV⋅s]
-E_MASS = 0.51099895000*1000000 #electron mass [MeV/c^2] -> [eV/c^2]
+HBAR = 6.582119569 * 10**(-16) # reduced plank's constant [eV⋅s]
+E_MASS = 0.51099895000*1000000 # electron mass [MeV/c^2] -> [eV/c^2]
 
 def electronType() -> str:
     return random.choice([0,1]) # 0=core, 1=valence
@@ -58,9 +58,7 @@ def getRandFermiMomentum(energy, normProb):
     return np.random.choice(energy, size=1, p=normProb)
 
 def main():
-
     e_type = np.empty(N).astype('int')        # electron type
-    z_energy = np.empty(N)                    # energy in z direction
     z_momenta = np.empty(N)                   # momenta in z direction 
     theta = np.empty(N)                       # angle
     heights = np.empty(N)                     # height that particle will hit the detector
@@ -78,10 +76,9 @@ def main():
             z_momenta[i] = random.gauss(0, energyToMomentum(4)) # mu=0, sigma=4 eV (energy)
 
         elif e_type[i] == 1: #'valence':
-            total_momenta = getRandFermiMomentum(fermi_energy, fermi_energy_PDF)
-            
-            phi_random = random.randrange(0,180)
             # assign energy based on fermi momentum distribution
+            total_momenta = getRandFermiMomentum(fermi_energy, fermi_energy_PDF)
+            phi_random = random.randrange(0,180)
             z_momenta[i] = m.cos(m.radians(phi_random))*total_momenta
 
         else:
@@ -102,7 +99,7 @@ def main():
     valence_heights = np.where(e_type == 1, heights, np.nan)
     fig, (ax1, ax2) = plt.subplots(1,2)
 
-    ax1.hist(core_heights, bins=numbins_height, alpha=0.8, color='skyblue', label='Core electrons', zorder=3)
+    ax1.hist(core_heights, bins=numbins_height, alpha=0.8,  color='skyblue', label='Core electrons', zorder=3)
     ax1.hist(valence_heights, bins=numbins_height, alpha=0.8, color='mediumseagreen', label='Valence electrons', zorder=3)
     ax1.legend()
     ax1.set_ylabel('Counts')
