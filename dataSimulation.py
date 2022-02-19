@@ -57,7 +57,6 @@ def initFermiEnergy(nFermiElements = 15000):
 def getRandFermiMomentum(energy, normProb):
     return np.random.choice(energy, size=1, p=normProb)
 
-
 def main():
 
     e_type = np.empty(N).astype('int')        # electron type
@@ -95,7 +94,7 @@ def main():
         heights[i] = m.tan(theta[i]) * DETECTOR_DIST
 
     ########################################################
-    # Plot stuff
+    # Plots
     ########################################################
     
     # Histogram height distribution for each electron type
@@ -103,23 +102,24 @@ def main():
     valence_heights = np.where(e_type == 1, heights, np.nan)
     fig, (ax1, ax2) = plt.subplots(1,2)
 
-    ax1.hist(core_heights, bins=numbins_height, alpha=0.5, label='core')
-    ax1.hist(valence_heights, bins=numbins_height, alpha=0.5, label='valence')
+    ax1.hist(core_heights, bins=numbins_height, alpha=0.8, color='skyblue', label='Core electrons', zorder=3)
+    ax1.hist(valence_heights, bins=numbins_height, alpha=0.8, color='mediumseagreen', label='Valence electrons', zorder=3)
     ax1.legend()
     ax1.set_ylabel('Counts')
     ax1.set_xlabel('Height at detector plane [cm]')
-    ax1.set_title('Distribution of height of particle at detector plane by electron type')
+    ax1.set_title('Impact height distribution at detector plane by electron type')
+    ax1.grid(linestyle=':', zorder=0)
 
     # Histogram height distribution for each electron type
     core_mom = np.where(e_type == 0, z_momenta, np.nan)
     valence_mom = np.where(e_type == 1, z_momenta, np.nan)
-    
-    ax2.hist(core_mom, bins=numbins_height, alpha=0.5, label='core')
-    ax2.hist(valence_mom, bins=numbins_height, alpha=0.5, label='valence')
+    ax2.hist(core_mom/1000, bins=numbins_height, alpha=0.8, color='skyblue', label='Core electrons', zorder=3)
+    ax2.hist(valence_mom/1000, bins=numbins_height, alpha=0.8, color='mediumseagreen', label='Valence electrons', zorder=3)
     ax2.legend()
     ax2.set_ylabel('Counts')
-    ax2.set_xlabel('Momenta [eV?]')
-    ax2.set_title('Distribution of momenta of particle at detector plane by electron type')
+    ax2.set_xlabel('Momenta [keV]')
+    ax2.set_title('Momentum distribution at detector plane by electron type')
+    ax2.grid(linestyle=':', zorder=0)
     
     plt.show()
 
