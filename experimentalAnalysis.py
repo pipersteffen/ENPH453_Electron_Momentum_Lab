@@ -4,7 +4,6 @@ import math as m
 import uncertainties as unc
 from uncertainties import unumpy
 from scipy.optimize import curve_fit
-from scipy.stats import norm
 
 STEPSIZE = 0.0635 # cm
 
@@ -24,25 +23,16 @@ def quadraticEquation(fit):
     a = fit[0]
     b = fit[1]
     c = fit[2]
-
     d = b**2 - 4*a*c
-
     sol1 = (-b - d**0.5)/(2*a)
     sol2 = (-b + d**0.5)/(2*a)
-
     return [sol1, sol2]
 
 def main(): 
     data = np.genfromtxt('realData.csv', delimiter=',', skip_header=True)
-
-    step = data[:,0]
-    time = data[:,1]
     position = data[:,2]
     counter_total = data[:,3]
     counter_coinc = data[:,4]
-
-    #counts = counter_coinc/counter_total # normalize hits on detector
-    #heights = counter_coinc**2/counter_total
 
     counts = counter_coinc**2/counter_total # corrected # of counts
     err_counts = ((2*counter_coinc/counter_total * counter_coinc**0.5)**2 + (counter_coinc**2/counter_total**2 * counter_total**0.5)**2)**0.5 # uncertainty in counts
@@ -67,24 +57,21 @@ def main():
         dL = offset - delta # left side
         dR = offset + delta
         
-        # subselect the x values of points on the tails
+        # Subselect the x values of points on the tails
         left_points = x[x <= dL]
         right_points = x[x >= dR]
         tail_x = np.concatenate([left_points, right_points])
 
         mid_x = x[(x >= dL) & (x <= dR)]
 
-        # subselect the count values of points on the tails
+        # Subselect the count values of points on the tails
         tail_counts_left = counts[x <= dL]
         tail_counts_right = counts[x >= dR]
         tail_counts = np.concatenate([tail_counts_left, tail_counts_right])
 
         mid_counts = counts[(x >= dL) & (x <= dR)]
-        #mid_counts = np.where(np.logical_and(x >= -delta, x <= delta))
-        #print(mid_counts)
-        #mid_counts = np.concatenate([counts[x >= -delta], counts[x <= delta]])
 
-        # subselect the error counts array to points on the tails
+        # Subselect the error counts array to points on the tails
         err_counts_left = err_counts[x <= dL]
         err_counts_right = err_counts[x >= dR]
         err_counts_tail = np.concatenate([err_counts_left, err_counts_right])
@@ -94,57 +81,32 @@ def main():
         tail_fit = gauss(x, *popt2)
         all_fit = gauss(x, *popt)
 
-        # plot the fit
-        #fig3, ax3 = plt.subplots()
-        #ax3.plot(x, counts,  '.k', label='All data')
-        #ax3.plot(x, all_fit, ':k', label='All data fit')
-        #ax3.plot(tail_x, tail_counts, '.r', label='Tail data')
-        #ax3.plot(x, tail_fit, '-r', label='Tail data fit')
-
-        # Now fit the parabola part....
-        # # subtract tail fit values from data TODO
-        # tail_fit_mid = np.concatenate([tail_fit[x >= -delta], tail_fit[x <= delta]])
+        # Now fit the parabola part
         mid_tail_fit = tail_fit[(x >= dL) & (x <= dR)]
         counts_sub = mid_counts - mid_tail_fit
         err_counts_sub = abs(counts_sub)**0.5
 
         # fit quadratic to that, with errors
-        popt3Temp, pcov3Temp = curve_fit(poly, mid_x, counts_sub)#, sigma=err_counts_sub)#, p0=[-8, -1, 1.5]) # need a,b,c guess for p0
+        popt3Temp, pcov3Temp = curve_fit(poly, mid_x, counts_sub)
         popt3, pcov3 = curve_fit(poly, mid_x, counts_sub, sigma=err_counts[(x >= dL) & (x <= dR)], p0=popt3Temp)
         quadFitError = unumpy.uarray(popt3, np.sqrt(np.diag(pcov3)))
-        #print(quad_fit_coeffs)
 
         poly_fit = poly(mid_x, *popt3)
-        #ax3.plot(mid_x, poly_fit, '-b', label='mid subtract fit')
-        #ax3.plot(mid_x, counts_sub, '*', label='subtracted')
 
-        #intercept = np.roots(quad_fit_coeffs)
         intercept = quadraticEquation(quadFitError)
         average_int = (abs(intercept[0] - offset) + abs(intercept[1] - offset))/2
         fermiMomentum = average_int*511/150 #Momentum in keV
 
-        #ax3.set_xlabel('Position on detector plane')
-        #ax3.set_ylabel('Corrected number of hits on detector')
-        #ax3.set_title('Experimental Data')
-        #ax3.legend()
-
-        # FIND RATIO
+        # FIND RATIO OF CORE TO VALENCE ELECTRONS
         poly_sum = np.sum(poly_fit[poly_fit>=0])
         poly_err = (poly_sum)**0.5
         tail_sum = np.sum(tail_fit)
         tail_err = tail_sum**0.5
-
         polyUnc = unc.ufloat(poly_sum, poly_err)
         tailUnc = unc.ufloat(tail_sum, tail_err)
-        #all_sum = np.sum(all_fit)
-
-        #print('poly coeffs:',popt3)
 
         # percent of count is tail/core
         perc_core = tailUnc/(tailUnc+polyUnc)
-
-        #print(poly_fit)
-
         # percent of count is poly/valence
         perc_val = polyUnc/(tailUnc+polyUnc)
         
@@ -154,7 +116,6 @@ def main():
 
         print('Percent core: ', perc_core*100)
         print('Percent valence: ', perc_val*100)
-
         print('Ratio or poly curve to tail: ', poly_sum/tail_sum)
         print('Fermi Momentum of fitted distrubtion: ', fermiMomentum, " keV.")
         print('Error in All Fit: ', allFitError)
